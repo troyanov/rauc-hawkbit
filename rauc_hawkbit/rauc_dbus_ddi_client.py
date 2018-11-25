@@ -255,21 +255,26 @@ class RaucDBUSDDIClient(AsyncDBUSClient):
 
         # try several times
         for dl_try in range(tries):
-            if not static_api_url:
-                checksum = await self.ddi.softwaremodules[software_module] \
-                    .artifacts[filename](self.bundle_dl_location)
-            else:
-                # API implementations might return static URLs, so bypass API
-                # methods and download bundle anyway
-                checksum = await self.ddi.get_binary(url,
-                                                     self.bundle_dl_location)
+            try:
+                if not static_api_url:
+                    checksum = await self.ddi.softwaremodules[software_module] \
+                        .artifacts[filename](self.bundle_dl_location)
+                else:
+                    # API implementations might return static URLs, so bypass API
+                    # methods and download bundle anyway
+                    checksum = await self.ddi.get_binary(url,
+                                                        self.bundle_dl_location)
 
-            if checksum == md5sum:
-                self.logger.info('Download successful')
-                return
-            else:
-                self.logger.error('Checksum does not match. {} tries remaining'
-                                  .format(tries-dl_try))
+                if checksum == md5sum:
+                    self.logger.info('Download successful')
+                    return
+                else:
+                    self.logger.error('Checksum does not match. {} tries remaining'
+                                    .format(tries-dl_try))
+            except Exception as e:
+                self.logger.error('Downloading artefact failed, because of {}.' \
+                        .format(e))
+ 
         # MD5 comparison unsuccessful, send negative feedback to HawkBit
         status_msg = 'Artifact checksum does not match after {} tries.' \
             .format(tries)
